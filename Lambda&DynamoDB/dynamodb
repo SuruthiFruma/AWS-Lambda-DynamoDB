@@ -1,0 +1,322 @@
+//To insert an item in db
+
+const AWS=require ('aws-sdk')
+exports.handler=async()=>{
+    AWS.config.update({region:'us-east-1'})
+    const dynamoDB=AWS.DynamoDB.DocumentClient();
+    const params={
+        TableName:'MyTable',
+        Item:{
+            id:1,
+            name:'Fruma',
+            country:'Switzerland'
+        }
+    }
+    dynamoDB.putItem(params,(data, err)=>{
+        if(err){
+            console.log('error occured',e)
+        }
+        else{
+            console.log('data is ',data)
+        }
+    })
+};
+
+//To get an item in db
+
+const AWS=require('aws-sdk')
+exports.handler=async()=>{
+    AWS.config.update({region:'us-east-1'})
+    const dynamoDB=AWS.DynamoDB.DocumentClient();
+    const params={
+        TableName:'MyTable',
+        Key:{
+            id:1
+        }
+    }
+    dynamoDB.getItem(params, (data,err)=>{
+      if(err){
+        console.log('error occured',e)
+      }
+      else{
+        console.log('data is ',data)
+    }
+    })
+}
+
+
+//To get an item based on primary key values using key condition expression.Here partition key is identified as id
+//Key condition expression is only used for primary key attributes
+//Same as that query is used for primary key attributes and scan can be used for both primary and non primary key attributes
+//Scan is used to read the table row by row whereas query reads the particular row
+
+//Syntax for KEC: 'attibuteName operator actualvalue
+//In key condition expression, only the sort key can have many operators . But partition key should have only (=) equal operator
+//Operators used in sort key (=,<,>,<=,>=,BETWEEN, AND ,begins with)
+
+const AWS=require('aws-sdk')
+exports.handler=()=>{
+AWS.config.update({region:'us-east-1'})
+const dynamoDB=AWS.DynamoDB.DocumentClient()
+const params={
+    TableName:'MyTable',
+    keyConditionExpression:'#pkname=:pkvalue',
+    ExpressionAttributeNames:{
+       '#pkname':'id',
+    },
+    ExpressionAttributeValues:{
+        ':pkvalue':'1'
+    }
+}
+dynamoDB.query(params,(data,err)=>{
+    if(err){
+        console.log('error occured',e)
+      }
+      else{
+        console.log('data is ',data)
+    }
+})
+}
+
+
+//Some more example of pasing params
+//NOTE: Here book title can be duplicate but edition no is globally unique
+//To get data when pk is book title and sk is book edition and have to get a particular(second) edition of the book
+const params1={
+    TableName:'MyTable',
+    keyConditionExpression:'#pkname=:pkvalue AND #skname = :value'
+    ExpressionAttibuteNames:{
+       '#pkname':'BookName',
+       '#skname':'BookEdition'
+    },
+    ExpressionAttributeValues:{
+       'value':'2',
+       
+    }
+}
+
+
+//To get data when pk is book title and sk is book edition and have to get greater than a particular(second) edition of the book
+const params2={
+    TableName:'MyTable',
+    keyConditionExpression:'#pkname=:pkvalue AND #skname >= :value'
+    ExpressionAttibuteNames:{
+       '#pkname':'BookName',
+       '#skname':'BookEdition'
+    },
+    ExpressionAttributeValues:{
+       'value':'2',
+       
+    }
+}
+
+
+
+//To get data when pk is book title and sk is book edition and have to one  book with edition 2 to 7
+const params3={
+    TableName:'MyTable',
+    keyConditionExpression:'#pkname=:pkvalue AND #skname BETWEEN :value1 AND :value2',
+    ExpressionAttibuteNames:{
+       '#pkname':'BookName',
+       '#skname':'BookEdition'
+    },
+    ExpressionAttributeValues:{
+       'value1':'2',
+       'value2':'7'
+    }
+}
+
+
+//To get data when pk is book title and sk is book edition and have to one  book with edition 2 to 7
+
+const params4={
+    TableName:'MyTable',
+    keyConditionExpression:'#pkname=:pkvalue AND #skname BETWEEN :value1 AND :value2',
+    ExpressionAttibuteNames:{
+       '#pkname':'BookName',
+       '#skname':'BookEdition'
+    },
+    ExpressionAttributeValues:{
+       'value1':'2',
+       'value2':'7'
+    }
+}
+
+
+//example of begins with
+const params5={
+    TableName:'MyTable',
+    keyConditionExpression:'#pkname=:pkvalue AND #skname begins_with :value',
+    ExpressionAttibuteNames:{
+       '#pkname':'BookName',
+       '#skname':'BookEdition'
+    },
+    ExpressionAttributeValues:{
+       'value':'2',
+       
+    }
+}
+
+
+//To get an item from db that is not a primary key. So filter expression is used.
+//Filter expression is executed after querying but before returing the value .This reduces the payload size
+
+
+//In this example country attribute is considered as a non primary key attribute
+const AWS=require('aws-sdk')
+exports.handler=async()=>{
+    AWS.config.update({region:'us-east-1'})
+    const dynamoDB=AWS.DynamoDB.DocumentClient();
+    const params={
+        TableName:'MyTable',
+        FilterExpression:'#attrname = :attrvalue',
+        ExpressionAttributeNames:{
+            '#attrname':'country'
+        },
+        ExpressionAttributeValues:{
+            ':attrvalue':'Switzerland'
+        }
+    }
+    dynamoDB.scan(params, (data,err)=>{
+      if(err){
+        console.log('error occured',e)
+      }
+      else{
+        console.log('data is ',data)
+    }
+    })
+}
+
+
+
+//Filter expression can also be used together with key condition exp where u want to get a particular attribute value after quering
+//In this example once the particular item has been selected by key condition expression, instead of returning all the attributes of that item, only the book price is returned by the filter expression.
+//This reduces the payload size
+
+const AWS=require('aws-sdk')
+AWS.config.update({region:'us-east-1'})
+const dynamoDB=AWS.DynamoDB.DocumentClient()
+exports.handler=()=>{
+    const params={
+        TableName:'MyTable',
+        KeyConditionExpression:'#pkname = :pkvale AND #skname = :skvalue',
+        FilterExpression:'#price=:price',
+        ExpressionAttibuteNames:{
+              '#pkname':'BookTitle',
+              '#skname':'BookEdition',
+              '#price':'BookPrice',
+        },
+        ExpressionAttributeValues:{
+               ':pkvalue':'Harry Potter',
+               ':skvalue': '2',
+               ':price':'1000'
+        }
+
+    }
+    dynamoDB.query(params,(err,data)=>{
+        if(err){
+            console.log('error occured',e)
+          }
+          else{
+            console.log('data is ',data)
+        }
+    })
+}
+
+
+
+
+//Delete an item 
+const AWS=require('aws-sdk');
+AWS.config.update({region:'us-east-1'})
+const dynamoDB=AWS.DynamoDB.DocumentClient()
+exports.handler=()=>{
+    const params={
+        TableName:'MyTable',
+        keyConditionExpression:'#pkname=:pkvalue AND #skname =:skvalue',
+        ExpressionAttributeNames:{
+            '#pkname':'id',
+            '#skname':'name',
+         },
+         ExpressionAttributeValues:{
+             ':pkvalue':'1',
+             ':skvalue':'xyz',
+         }
+
+    }
+    dynamoDB.delete(params,(err,data)=>{
+        if(err){
+            console.log('error occured',e)
+          }
+          else{
+            console.log('data is ',data)
+        }
+    })
+}
+
+
+//GSI AND LSI
+//GSI are the rearranged table apart from the base table.They have a different partition key and sort key
+//LSI are the rearranged table apart from the base table. They have a same partition key as the base table but different sort key
+//Only the Index name has to be mentioned.Rest all query remains same
+const AWS=require('aws-sdk');
+AWS.config.update({region:'us-east-1'})
+const dynamoDB=AWS.DynamoDB.DocumentClient()
+exports.handler=()=>{
+    const params={
+        TableName:'MyTable',
+        IndexName:'MyIndexName',
+        keyConditionExpression:'#pkname=:pkvalue AND #skname =:skvalue',
+        ExpressionAttributeNames:{
+            '#pkname':'id',
+            '#skname':'name',
+         },
+         ExpressionAttributeValues:{
+             ':pkvalue':'1',
+             ':skvalue':'xyz',
+         }
+
+    }
+    dynamoDB.delete(params,(err,data)=>{
+        if(err){
+            console.log('error occured',e)
+          }
+          else{
+            console.log('data is ',data)
+        }
+    })
+}
+
+
+
+//Updating the value using update expression
+//Updating the country , city attribute of the item that has 1 as the value of the partition key
+const AWS=require('aws-sdk')
+AWS.config.update({region:'us-east-1'})
+const dynamoDB=AWS.dynamoDB.DocumentClient()
+exports.handler=()=>{
+    const params={
+        TableName:'MyTableName',
+        KeyConditionExpression:'#pkname=:pkvalue',
+        UpdateExpression:'set #attrname1="attrvalue1, #attrname2=:attrvalue2',
+        ExpressionAttibuteNames:{
+             '#pkname':'id',
+             '#attrname1':'country',
+             '#attrname2':'city',
+        },
+        ExpressionAttributeValues:{
+            ':pkvalue':'1',
+            ':attrvalue1':'UK',
+            ':attrvalue2':'GB',
+        },
+        
+    }
+    dynamoDB.update(params, (err,data)=>{
+        if(err){
+            console.log('error occured',e)
+          }
+          else{
+            console.log('data is ',data)
+        }
+    })
+}
