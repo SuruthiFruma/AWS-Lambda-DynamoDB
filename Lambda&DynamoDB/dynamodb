@@ -312,7 +312,7 @@ exports.handler=()=>{
         
     }
     dynamoDB.update(params, (err,data)=>{
-        if(err){
+        if(e){
             console.log('error occured',e)
           }
           else{
